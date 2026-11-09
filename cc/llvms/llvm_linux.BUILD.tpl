@@ -141,6 +141,20 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+# C++ runtime for toolchains that enable static_link_cpp_runtimes. Only defined
+# by the Linux x86_64 LLVM repositories.
+alias(
+    name = "cpp_static_runtime",
+    actual = "@@%{llvm_repo_name}//:cpp_static_runtime",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "cpp_dynamic_runtime",
+    actual = "@@%{llvm_repo_name}//:cpp_dynamic_runtime",
+    visibility = ["//visibility:public"],
+)
+
 # This library is needed for LiteRT because it uses a compiler-specific
 # built-in functions, and these functions are not provided by GCC
 alias(

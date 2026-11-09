@@ -62,17 +62,17 @@ def _runtime_library_search_directories_impl(ctx):
                 flag_group(
                     iterate_over = "runtime_library_search_directories",
                     flag_groups = [
-                        flag_group(
-                            flags = [
-                                "-Wl,-rpath,$EXEC_ORIGIN/%{runtime_library_search_directories}",
-                            ],
-                            expand_if_true = "is_cc_test",
-                        ),
+                        # Bazel's default toolchain uses $EXEC_ORIGIN for
+                        # cc_test here. glibc's dynamic loader does not expand
+                        # $EXEC_ORIGIN (only $ORIGIN, $LIB and $PLATFORM), so
+                        # such a RUNPATH finds neither the solib dependencies
+                        # nor the dynamic C++ runtime. Use $ORIGIN for tests
+                        # too, as the branch without static_link_cpp_runtimes
+                        # below does.
                         flag_group(
                             flags = [
                                 "-Wl,-rpath,$ORIGIN/%{runtime_library_search_directories}",
                             ],
-                            expand_if_false = "is_cc_test",
                         ),
                     ],
                     expand_if_available = "runtime_library_search_directories",

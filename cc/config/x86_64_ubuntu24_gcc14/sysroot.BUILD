@@ -190,6 +190,17 @@ cc_toolchain_import(
     visibility = ["//visibility:public"],
 )
 
+# libatomic, a dependency of libc++.so.1. Part of the dynamic C++ runtime of
+# toolchains that enable static_link_cpp_runtimes.
+filegroup(
+    name = "libatomic",
+    srcs = glob(
+        ["usr/lib/x86_64-linux-gnu/libatomic.so.1"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
 #============================================================================================
 # Extra libraries
 #============================================================================================

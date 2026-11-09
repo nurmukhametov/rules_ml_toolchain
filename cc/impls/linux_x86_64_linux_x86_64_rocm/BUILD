@@ -118,11 +118,57 @@ cc_toolchain_import(
         # Hermetic LLVM headers
         "@llvm_linux_x86_64//:compiler_incs",
         "@sysroot_linux_x86_64//:sys_incs",
-        ":std_libs",
+    ] + select({
+        # Bazel links the C++ runtime itself, see :static_link_cpp_runtimes.
+        ":is_static_libcxx_runtime": [],
+        "//conditions:default": [":std_libs"],
+    }) + [
         "@sysroot_linux_x86_64//:sys_libs",
         "@llvm_linux_x86_64//:libclang_rt",
     ],
     visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "is_static_libcxx_runtime",
+    flag_values = {
+        "//common:stdlib": "libc++",
+        "//common:static_libcxx": "True",
+    },
+)
+
+# With static libc++, let Bazel link the C++ runtime instead of passing it as
+# static archives on every link line. Bazel links :cpp_static_runtime into
+# binaries that link their dependencies statically, and :cpp_dynamic_runtime
+# (copied into the toolchain's solib directory and added to runfiles and
+# RUNPATH) into shared objects and into binaries and tests that link their
+# dependencies dynamically, such as tests built with --dynamic_mode=fully.
+#
+# Without this, every _solib_ shared object of such a test statically links a
+# private copy of libc++abi (hidden by --exclude-libs), while the guard
+# variables of inline function-local statics are shared between them. The
+# default libc++abi guard implementation waits on a mutex and condition
+# variable private to each copy, so a thread waiting through one copy can miss
+# the wakeup from another and hang forever in __cxa_guard_acquire.
+cc_feature(
+    name = "static_link_cpp_runtimes",
+    enabled = select({
+        ":is_static_libcxx_runtime": True,
+        "//conditions:default": False,
+    }),
+)
+
+filegroup(
+    name = "cpp_static_runtime",
+    srcs = ["@llvm_linux_x86_64//:cpp_static_runtime"],
+)
+
+filegroup(
+    name = "cpp_dynamic_runtime",
+    srcs = [
+        "@llvm_linux_x86_64//:cpp_dynamic_runtime",
+        "@sysroot_linux_x86_64//:libatomic",
+    ],
 )
 
 config_setting(
@@ -274,6 +320,7 @@ FEATURES_ESSENTIAL = [
     ":imports_feature",
     ":startup_libs_feature",
     ":static_link_libstdcxx",
+    ":static_link_cpp_runtimes",
 
     # ROCm-specific features
     ":rocm_hipcc_feature",
@@ -349,8 +396,16 @@ cc_toolchain(
     as_files = ":compiler",
     compiler_files = ":compiler",
     dwp_files = ":all",
+    dynamic_runtime_lib = select({
+        ":is_static_libcxx_runtime": ":cpp_dynamic_runtime",
+        "//conditions:default": None,
+    }),
     linker_files = ":linker",
     objcopy_files = ":all",
+    static_runtime_lib = select({
+        ":is_static_libcxx_runtime": ":cpp_static_runtime",
+        "//conditions:default": None,
+    }),
     strip_files = ":strip",
     supports_param_files = 1,
     toolchain_config = ":config",

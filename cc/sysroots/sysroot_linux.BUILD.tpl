@@ -49,6 +49,13 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+# Only defined by the Linux x86_64 sysroots.
+alias(
+    name = "libatomic",
+    actual = "@@%{sysroot_repo_name}//:libatomic",
+    visibility = ["//visibility:public"],
+)
+
 # Libraries for export
 alias(
     name = "openmp",

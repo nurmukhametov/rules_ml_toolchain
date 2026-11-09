@@ -173,6 +173,33 @@ cc_toolchain_import(
     visibility = ["//visibility:public"],
 )
 
+# The C++ runtime as cc_toolchain static_runtime_lib / dynamic_runtime_lib, for
+# toolchains that enable the static_link_cpp_runtimes feature. Bazel then links
+# static_runtime_lib into statically linked binaries, and links
+# dynamic_runtime_lib (copied into the toolchain's solib directory and added to
+# runfiles and RUNPATH) into binaries and tests that link their dependencies
+# dynamically, so such a process has a single libc++ and libc++abi.
+filegroup(
+    name = "cpp_static_runtime",
+    srcs = [
+        "lib/x86_64-unknown-linux-gnu/libc++.a",
+        "lib/x86_64-unknown-linux-gnu/libc++abi.a",
+        "lib/x86_64-unknown-linux-gnu/libunwind.a",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# The SONAME files, which is what the dynamic loader looks for.
+filegroup(
+    name = "cpp_dynamic_runtime",
+    srcs = [
+        "lib/x86_64-unknown-linux-gnu/libc++.so.1",
+        "lib/x86_64-unknown-linux-gnu/libc++abi.so.1",
+        "lib/x86_64-unknown-linux-gnu/libunwind.so.1",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 #============================================================================================
 # Sanitizers
 
